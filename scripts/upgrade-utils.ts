@@ -1,4 +1,5 @@
 import { ethers, upgrades } from "hardhat";
+import hre from "hardhat";
 
 export interface UpgradeConfig {
   proxyAddress: string;
@@ -130,4 +131,51 @@ export function handleUpgradeError(error: any) {
   console.error("Upgrade failed:", error);
   logTroubleshooting();
   throw error;
+}
+
+/**
+ * Verifies a newly deployed implementation contract on the block explorer
+ */
+export async function verifyImplementation(implementationAddress: string, contractName: string = "ReceiverContract"): Promise<void> {
+  try {
+    console.log(`Verifying ${contractName} implementation on block explorer...`);
+    
+    // Use hardhat's verify task
+    await hre.run("verify:verify", {
+      address: implementationAddress,
+      constructorArguments: [], // Implementation contracts typically have no constructor args
+    });
+    
+    console.log(`✅ ${contractName} implementation verified successfully!`);
+    console.log(`📋 View on explorer: ${getExplorerUrl(implementationAddress)}`);
+  } catch (error: any) {
+    if (error.message?.includes("Already Verified")) {
+      console.log(`✅ ${contractName} implementation already verified`);
+    } else if (error.message?.includes("Contract source code already verified")) {
+      console.log(`✅ ${contractName} implementation already verified`);
+    } else {
+      console.log(`⚠️  Could not verify ${contractName} implementation:`, error.message);
+      console.log(`📋 Manual verification: npx hardhat verify ${implementationAddress} --network ${hre.network.name}`);
+    }
+  }
+}
+
+/**
+ * Gets the block explorer URL for the current network
+ */
+function getExplorerUrl(address: string): string {
+  const networkName = hre.network.name;
+  
+  switch (networkName) {
+    case 'base':
+      return `https://basescan.org/address/${address}`;
+    case 'baseSepolia':
+      return `https://sepolia.basescan.org/address/${address}`;
+    case 'mainnet':
+      return `https://etherscan.io/address/${address}`;
+    case 'sepolia':
+      return `https://sepolia.etherscan.io/address/${address}`;
+    default:
+      return `Explorer link not configured for network: ${networkName}`;
+  }
 } 

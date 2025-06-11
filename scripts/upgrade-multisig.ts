@@ -4,6 +4,7 @@ import {
   checkProxyAdmin,
   getReceiverContractFactory,
   handleUpgradeError,
+  verifyImplementation,
   UpgradeResult
 } from "./upgrade-utils";
 
@@ -31,6 +32,9 @@ async function main(): Promise<UpgradeResult> {
     const ReceiverContractV2 = await getReceiverContractFactory(deployer);
     const newImplementationAddress = await upgrades.deployImplementation(ReceiverContractV2) as string;
     console.log("New implementation deployed at:", newImplementationAddress);
+
+    // Verify the new implementation on block explorer
+    await verifyImplementation(newImplementationAddress);
 
     // Get the ProxyAdmin contract
     const ProxyAdmin = await ethers.getContractAt("ProxyAdmin", proxyAdminAddress);

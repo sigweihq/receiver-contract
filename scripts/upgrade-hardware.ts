@@ -6,6 +6,7 @@ import {
   verifyUpgrade,
   getImplementationAddress,
   handleUpgradeError,
+  verifyImplementation,
   UpgradeResult
 } from "./upgrade-utils";
 import { findMatchingSigner } from "./deploy-utils";
@@ -47,6 +48,9 @@ async function main(): Promise<UpgradeResult> {
     // Deploy new implementation first to get the address
     const newImplementationAddress = await upgrades.deployImplementation(ReceiverContractV2) as string;
     console.log("New implementation deployed at:", newImplementationAddress);
+    
+    // Verify the new implementation on block explorer
+    await verifyImplementation(newImplementationAddress);
     
     console.log("Upgrading proxy to point to new implementation...");
     console.log("Please confirm the upgrade transaction on your hardware wallet...");

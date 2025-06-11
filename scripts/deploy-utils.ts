@@ -183,33 +183,24 @@ export async function getProxyInfo(
 /**
  * Logs deployment summary
  */
-export function logDeploymentSummary(result: DeploymentResult, isProxyDeployment: boolean = false) {
+export function logDeploymentSummary(result: DeploymentResult, isUpgradeable: boolean = true) {
   console.log("\n=== Deployment Summary ===");
+  console.log("Proxy Address:", result.proxy);
+  console.log("Implementation Address:", result.implementation);
   
-  if (isProxyDeployment && result.proxy) {
-    console.log("Proxy Address:", result.proxy);
-    console.log("Implementation Address:", result.implementation);
-    if (result.admin) {
-      console.log("ProxyAdmin Address:", result.admin);
-    }
-    if (result.finalOwner) {
-      console.log("Final Owner (ReceiverContract + ProxyAdmin):", result.finalOwner);
-    }
-    console.log("\n🎉 Deployment completed successfully!");
-    console.log("📋 Next steps:");
-    console.log("1. Verify contracts on BaseScan");
-    console.log("2. Test functionality with the new owner account");
-    console.log("3. Update documentation with deployed addresses");
-  } else {
-    console.log("Implementation Address:", result.implementation);
+  if (isUpgradeable) {
+    console.log("ProxyAdmin Address:", result.admin);
+    console.log("Final Owner:", result.finalOwner);
     console.log("Deployer Address:", result.deployer);
-    if (result.txHash) {
-      console.log("Transaction Hash:", result.txHash);
-    }
-    console.log("\n=== Next Steps ===");
-    console.log("1. Verify the contract on the explorer");
-    console.log("2. Test the implementation if needed");
-    console.log("3. Use this address in your upgrade script:");
+  }
+
+  console.log("\n=== Next Steps ===");
+  console.log("1. Verify contracts on BaseScan");
+  console.log("2. Test contract functionality");
+  console.log("3. Save addresses for future upgrades");
+  
+  if (isUpgradeable) {
+    console.log("4. Use upgrade scripts for future versions:");
     console.log("   - For private key upgrade: use upgrade.ts");
     console.log("   - For hardware wallet: use upgrade-hardware.ts");
     console.log("   - For multisig: use upgrade-multisig.ts");
@@ -222,9 +213,11 @@ export function logDeploymentSummary(result: DeploymentResult, isProxyDeployment
 export function handleDeploymentError(error: any, context: string = "Deployment") {
   console.error(`❌ ${context} failed:`, error);
   console.log("\nTroubleshooting:");
-  console.log("1. Check your network configuration");
-  console.log("2. Ensure sufficient gas fees");
+  console.log("1. Verify the contract on the explorer");
+  console.log("2. Check your network configuration");
   console.log("3. Verify your account has enough ETH");
   console.log("4. Check environment variables are set correctly");
-  throw error;
+  console.log("5. If verification fails, use: npx hardhat verify <address> --network <network>");
+  
+  // Don't throw here - let the calling function handle the error
 } 
