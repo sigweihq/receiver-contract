@@ -47,21 +47,28 @@ pnpm run compile
 This project uses Infisical for environment variable management. Set up your `.env` variables through Infisical:
 
 Required environment variables:
-- `DEPLOYER_PRIVATE_KEY`: Private key of the account that will deploy contracts
+- `DEPLOYER_PRIVATE_KEY`: Private key of the account that will deploy contracts (not needed for Ledger)
 - `OWNER_ACCOUNT`: Address that will own the ReceiverContract and ProxyAdmin
 - `ALCHEMY_API_KEY`: Alchemy API key for Base networks
 - `BASESCAN_API_KEY`: BaseScan API key for contract verification
+
+Optional (for Ledger hardware wallet):
+- `USE_LEDGER`: Set to "true" to enable Ledger support
 
 Example infisical setup:
 ```bash
 # Initialize infisical in your project
 infisical init
 
-# Set environment variables
+# Set environment variables (standard setup)
 infisical secrets set DEPLOYER_PRIVATE_KEY "your_private_key_here"
 infisical secrets set OWNER_ACCOUNT "0x..." # Address that will control the contracts
 infisical secrets set ALCHEMY_API_KEY "your_alchemy_key_here"
 infisical secrets set BASESCAN_API_KEY "your_basescan_key_here"
+
+# Additional setup for Ledger hardware wallet
+infisical secrets set USE_LEDGER "true"
+# Note: OWNER_ACCOUNT will be used as the Ledger address
 ```
 
 ## Deployment
@@ -169,25 +176,77 @@ const balances = await receiverContract.getMultipleTokenBalances([
 
 ## Contract Upgrades
 
-### Upgrade Process
-1. Deploy new implementation
-2. Use ProxyAdmin to upgrade
+There are three upgrade scripts depending on your admin setup. Each script automatically deploys the new implementation contract and either upgrades the proxy or provides transaction data for manual execution.
+
+### 1. Private Key Admin (Standard)
+For when the proxy admin is controlled by a private key:
 
 ```bash
-# Set the proxy address from initial deployment
-export PROXY_ADDRESS="0x..."
+# Set required environment variables
+export PROXY_ADDRESS="0x..."  # From initial deployment
+export DEPLOYER_PRIVATE_KEY="0x..."  # Admin's private key
 
-# Run upgrade script (must be run by OWNER_ACCOUNT or authorized account)
-infisical run -- pnpm run upgrade:baseSepolia
-
-# Verify ownership structure
-PROXY_ADDRESS="0x..." pnpm run verify-ownership
+# Run upgrade
+infisical run -- pnpm hardhat run scripts/upgrade.ts --network baseSepolia
 ```
 
-### Upgrade Script Usage
-```typescript
-// scripts/upgrade.ts handles the upgrade process
-// Set PROXY_ADDRESS environment variable before running
+### 2. Hardware Wallet Admin
+For when the proxy admin is a hardware wallet (Ledger, Trezor, etc.):
+
+```bash
+# Install hardware wallet plugin (required for Ledger support)
+pnpm add --save-dev @nomicfoundation/hardhat-ledger
+
+# Configure environment variables for Ledger
+infisical secrets set USE_LEDGER "true"
+export PROXY_ADDRESS="0x..."
+export OWNER_ACCOUNT="0x..."  # This should be your Ledger address
+
+# Option 1: Use explicit Ledger networks (only available when plugin is installed)
+infisical run -- pnpm hardhat run scripts/upgrade-hardware.ts --network baseSepoliaLedger
+
+# Option 2: Use regular networks with USE_LEDGER=true
+infisical run -- pnpm hardhat run scripts/upgrade-hardware.ts --network baseSepolia
+```
+
+**Note:** The Ledger plugin is optional. Tests and basic functionality work without it. Only install if you need hardware wallet support.
+
+The script will automatically:
+- Deploy the new implementation contract
+- Find the correct signer matching the proxy admin address
+- Prompt you to confirm both transactions on your hardware wallet
+- Handle hardware wallet-specific error cases
+
+### 3. Multisig Admin
+For when the proxy admin is a multisig wallet (Safe, etc.):
+
+```bash
+# Set required environment variables
+export PROXY_ADDRESS="0x..."
+export MULTISIG_ADDRESS="0x..."  # Your multisig address
+
+# Generate transaction data for multisig execution
+infisical run -- pnpm hardhat run scripts/upgrade-multisig.ts --network baseSepolia
+```
+
+This script will:
+1. Deploy the new implementation contract
+2. Generate the exact transaction data needed for your multisig
+3. Provide step-by-step instructions for multisig execution
+
+Then execute through your multisig interface:
+1. Go to your multisig (e.g., Safe App)
+2. Create a new transaction with the provided data
+3. Have required signers approve and execute
+
+### Post-Upgrade Verification
+
+```bash
+# Verify ownership structure after upgrade
+PROXY_ADDRESS="0x..." pnpm run verify-ownership
+
+# Verify the new implementation is active
+infisical run -- pnpm hardhat run scripts/verify-upgrade.ts --network baseSepolia
 ```
 
 ## Testing
