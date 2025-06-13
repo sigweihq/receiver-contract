@@ -30,7 +30,6 @@ This ensures a single account controls both the operational functionality and th
 
 - Node.js (v18+)
 - pnpm
-- Infisical CLI (for environment management)
 
 ## Installation
 
@@ -44,8 +43,6 @@ pnpm run compile
 
 ## Environment Setup
 
-This project uses Infisical for environment variable management. Set up your `.env` variables through Infisical:
-
 Required environment variables:
 - `DEPLOYER_PRIVATE_KEY`: Private key of the account that will deploy contracts (not needed for Ledger)
 - `OWNER_ACCOUNT`: Address that will own the ReceiverContract and ProxyAdmin
@@ -54,22 +51,6 @@ Required environment variables:
 
 Optional (for Ledger hardware wallet):
 - `USE_LEDGER`: Set to "true" to enable Ledger support
-
-Example infisical setup:
-```bash
-# Initialize infisical in your project
-infisical init
-
-# Set environment variables (standard setup)
-infisical secrets set DEPLOYER_PRIVATE_KEY "your_private_key_here"
-infisical secrets set OWNER_ACCOUNT "0x..." # Address that will control the contracts
-infisical secrets set ALCHEMY_API_KEY "your_alchemy_key_here"
-infisical secrets set BASESCAN_API_KEY "your_basescan_key_here"
-
-# Additional setup for Ledger hardware wallet
-infisical secrets set USE_LEDGER "true"
-# Note: OWNER_ACCOUNT will be used as the Ledger address
-```
 
 ## Deployment
 
@@ -80,12 +61,12 @@ pnpm run deploy
 
 ### Base Sepolia Testnet
 ```bash
-infisical run -- pnpm run deploy:baseSepolia
+pnpm run deploy:baseSepolia
 ```
 
 ### Base Mainnet
 ```bash
-infisical run -- pnpm run deploy:base
+pnpm run deploy:base
 ```
 
 ## Usage
@@ -187,7 +168,7 @@ export PROXY_ADDRESS="0x..."  # From initial deployment
 export DEPLOYER_PRIVATE_KEY="0x..."  # Admin's private key
 
 # Run upgrade
-infisical run -- pnpm hardhat run scripts/upgrade.ts --network baseSepolia
+pnpm hardhat run scripts/upgrade.ts --network baseSepolia
 ```
 
 ### 2. Hardware Wallet Admin
@@ -198,15 +179,15 @@ For when the proxy admin is a hardware wallet (Ledger, Trezor, etc.):
 pnpm add --save-dev @nomicfoundation/hardhat-ledger
 
 # Configure environment variables for Ledger
-infisical secrets set USE_LEDGER "true"
+export USE_LEDGER=true
 export PROXY_ADDRESS="0x..."
 export OWNER_ACCOUNT="0x..."  # This should be your Ledger address
 
 # Option 1: Use explicit Ledger networks (only available when plugin is installed)
-infisical run -- pnpm hardhat run scripts/upgrade-hardware.ts --network baseSepoliaLedger
+pnpm hardhat run scripts/upgrade-hardware.ts --network baseSepoliaLedger
 
 # Option 2: Use regular networks with USE_LEDGER=true
-infisical run -- pnpm hardhat run scripts/upgrade-hardware.ts --network baseSepolia
+pnpm hardhat run scripts/upgrade-hardware.ts --network baseSepolia
 ```
 
 **Note:** The Ledger plugin is optional. Tests and basic functionality work without it. Only install if you need hardware wallet support.
@@ -226,7 +207,7 @@ export PROXY_ADDRESS="0x..."
 export MULTISIG_ADDRESS="0x..."  # Your multisig address
 
 # Generate transaction data for multisig execution
-infisical run -- pnpm hardhat run scripts/upgrade-multisig.ts --network baseSepolia
+pnpm hardhat run scripts/upgrade-multisig.ts --network baseSepolia
 ```
 
 This script will:
@@ -246,7 +227,7 @@ Then execute through your multisig interface:
 PROXY_ADDRESS="0x..." pnpm run verify-ownership
 
 # Verify the new implementation is active
-infisical run -- pnpm hardhat run scripts/verify-upgrade.ts --network baseSepolia
+pnpm hardhat run scripts/verify-upgrade.ts --network baseSepolia
 ```
 
 ## Testing
@@ -283,10 +264,10 @@ After deployment, verify your contracts:
 
 ```bash
 # Verify on BaseScan
-infisical run -- pnpm run verify --network baseSepolia 0x... # contract address
+pnpm run verify --network baseSepolia 0x... # contract address
 
 # For mainnet
-infisical run -- pnpm run verify --network base 0x... # contract address
+pnpm run verify --network base 0x... # contract address
 ```
 
 ## Security Features
@@ -340,10 +321,6 @@ event MultipleTokensWithdrawn(address indexed owner, address[] tokens, uint256[]
 - Ensure the deployer account has enough ETH for gas fees
 - Check account balance: `pnpm hardhat run scripts/check-balance.ts`
 
-### 2. Environment variables not loaded
-- Ensure infisical is properly configured
-- Run commands with `infisical run --`
-
-### 3. Contract verification fails
+### 2. Contract verification fails
 - Ensure correct network configuration
 - Check that BaseScan API key is set correctly
